@@ -1,0 +1,75 @@
+# Install pgmpy if not already installed
+# pip install pgmpy
+
+import pandas as pd
+from pgmpy.models import BayesianNetwork
+from pgmpy.estimators import MaximumLikelihoodEstimator
+from pgmpy.inference import VariableElimination
+
+# ---------------------------
+# Step 1: Create the dataset
+# ---------------------------
+data = pd.DataFrame({
+    'StudyHours': ['Low', 'Low', 'High', 'High', 'Low', 'High', 'Low', 'High', 'High', 'Low'],
+    'Attendance': ['Poor', 'Good', 'Poor', 'Good', 'Poor', 'Good', 'Good', 'Poor', 'Good', 'Good'],
+    'Pass': ['No', 'Yes', 'Yes', 'Yes', 'No', 'Yes', 'No', 'Yes', 'Yes', 'No']
+})
+
+print("Dataset:\n", data)
+
+# ---------------------------
+# Step 2: Define the Bayesian Network structure
+# ---------------------------
+# StudyHours and Attendance -> Pass
+model = BayesianNetwork([('StudyHours', 'Pass'), ('Attendance', 'Pass')])
+
+# ---------------------------
+# Step 3: Train the network using Maximum Likelihood Estimator
+# ---------------------------
+model.fit(data, estimator=MaximumLikelihoodEstimator)
+
+# ---------------------------
+# Step 4: Perform inference
+# ---------------------------
+infer = VariableElimination(model)
+
+# Example: Predict probability of passing given StudyHours=High and Attendance=Good
+query = infer.query(variables=['Pass'], evidence={'StudyHours': 'High', 'Attendance': 'Good'})
+print("\nProbability of passing given StudyHours=High and Attendance=Good:\n", query)
+
+# Example: Predict probability of passing given StudyHours=Low and Attendance=Poor
+query2 = infer.query(variables=['Pass'], evidence={'StudyHours': 'Low', 'Attendance': 'Poor'})
+print("\nProbability of passing given StudyHours=Low and Attendance=Poor:\n", query2)
+
+# ---------------------------
+# Step 5: Predict pass/fail for multiple students
+# ---------------------------
+test_students = pd.DataFrame({
+    'StudyHours': ['High', 'Low', 'High'],
+    'Attendance': ['Good', 'Good', 'Poor']
+})
+
+predictions = []
+for i, row in test_students.iterrows():
+    prob = infer.query(variables=['Pass'], evidence={'StudyHours': row['StudyHours'], 'Attendance': row['Attendance']})
+    predicted_class = prob.values.argmax()  # 0=No, 1=Yes
+    predictions.append('No' if predicted_class == 0 else 'Yes')
+
+test_students['PredictedPass'] = predictions
+print("\nPredictions for test students:\n", test_students)
+
+
+OUTPUT
+
+Dataset:
+   StudyHours Attendance Pass
+0        Low       Poor   No
+1        Low       Good  Yes
+2       High       Poor  Yes
+3       High       Good  Yes
+4        Low       Poor   No
+5       High       Good  Yes
+6        Low       Good   No
+7       High       Poor  Yes
+8       High       Good  Yes
+9        Low       Good   No
