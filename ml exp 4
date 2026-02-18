@@ -1,0 +1,56 @@
+import pandas as pd
+
+# Load dataset
+msg = pd.read_csv('naivetext1.csv', names=['message', 'label'])
+
+print("The dimensions of the dataset:", msg.shape)
+
+# Convert labels to numeric
+msg['labelnum'] = msg.label.map({'pos': 1, 'neg': 0})
+
+# Define features and target
+X = msg['message']
+y = msg['labelnum']
+
+print("\nMessages:\n", X)
+print("\nLabels:\n", y)
+
+# Train-test split
+from sklearn.model_selection import train_test_split
+
+xtrain, xtest, ytrain, ytest = train_test_split(X, y, test_size=0.25, random_state=42)
+
+print("\nTraining and Testing shapes:")
+print("xtrain:", xtrain.shape)
+print("xtest:", xtest.shape)
+print("ytrain:", ytrain.shape)
+print("ytest:", ytest.shape)
+
+# Convert text into numeric vectors
+from sklearn.feature_extraction.text import CountVectorizer
+
+count_vect = CountVectorizer()
+xtrain_dtm = count_vect.fit_transform(xtrain)
+xtest_dtm = count_vect.transform(xtest)
+
+# Train Naive Bayes model
+from sklearn.naive_bayes import MultinomialNB
+
+clf = MultinomialNB()
+clf.fit(xtrain_dtm, ytrain)
+
+# Prediction
+predicted = clf.predict(xtest_dtm)
+
+# Evaluation
+from sklearn import metrics
+
+print("\nAccuracy Metrics")
+print("Accuracy of the classifier is:",
+      metrics.accuracy_score(ytest, predicted))
+
+print("\nConfusion Matrix")
+print(metrics.confusion_matrix(ytest, predicted))
+
+print("\nRecall:", metrics.recall_score(ytest, predicted))
+print("Precision:", metrics.precision_score(ytest, predicted))
